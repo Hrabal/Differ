@@ -1,5 +1,5 @@
 # Differ
-### Jet another object comparison tool.
+### Yet another object comparison tool.
 This module provides a way to find differences between simple and complex (nested) objects.
 
 This module do what others do (think of [difflib](https://docs.python.org/3/library/difflib.html) / [DeepDiff](http://deepdiff.readthedocs.io/en/latest/) / [ObjDiff](http://pythonhosted.org/objdiff/)), but the way I like, and with some magic.
