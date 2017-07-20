@@ -16,7 +16,7 @@ differ.compare(object1, object2)
 print(differ.added, differ.removed)
 ```
 
-You can also play with inheritance from the Diffing class, that will provide you the brand new keyword '?':
+You can also play with inheritance from the Diffing class, that will provide you the brand new keyword ' |_| ':
 ```python
 from differ import Diffing
 class MyClass(Diffing):
@@ -24,14 +24,14 @@ class MyClass(Diffing):
 
 a = MyClass()
 b = MyClass()
-diff = a ? b  # diff is a Differ instance
+diff = a |_| b  # diff is a Differ instance
 ```
 
 You can also use the magic, and make everything differable:
 ```python
 from differ import differencies
-# now, some python objects respond to the '?' keyword ''''''natively''''''
+# now, some python objects respond to the beautiful |_| operator !!
 
 a = b = {}
-diff = a ? b
+diff = a |_| b
 ```
