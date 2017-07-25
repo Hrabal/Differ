@@ -1,15 +1,18 @@
 # coding: utf-8
 from copy import copy
 from itertools import product
+from datetime import datetime
 from difflib import SequenceMatcher
 from collections import OrderedDict, namedtuple, Hashable
 
 
 class Hashabledict(dict):
     def __key(self):
-        return tuple((k,self[k]) for k in sorted(self))
+        return tuple((k, self[k]) for k in sorted(self))
+
     def __hash__(self):
         return hash(self.__key())
+
     def __eq__(self, other):
         return self.__key() == other.__key()
 
@@ -17,8 +20,10 @@ class Hashabledict(dict):
 class Hashablelist(list):
     def __key(self):
         return tuple(k for k in sorted(self))
+
     def __hash__(self):
         return hash(self.__key())
+
     def __eq__(self, other):
         return self.__key() == other.__key()
 
@@ -35,11 +40,15 @@ def make_hashable(thing):
         new_thing = Hashabledict()
         for k, v in thing.iteritems():
             new_thing[k] = make_hashable(v)
-        return  new_thing
+        return new_thing
     else:
         return thing
 
 Match = namedtuple('Match', ['twin_index', 'ratio', 'val'])
+
+
+class Difference(object):
+    pass
 
 
 class Differ(object):
@@ -56,7 +65,7 @@ class Differ(object):
                 (lambda x: isinstance(x, dict), self._dict_compare),
                 (lambda x: hasattr(x, '__iter__'), self._iter_compare),
                 (lambda x: True, self._leaf_compare)
-            ])
+        ])
         return next((value for condition, value in compare_methods.items() if condition(obj)), '')
 
     def _format_report(self, a, r, m, s):
@@ -65,7 +74,8 @@ class Differ(object):
     def _prepare_object(self, obj, new_keys=None, key=None):
         new_k = set(new_keys) if new_keys else set()
         if isinstance(obj, dict):
-            return {k: self._prepare_object(v, new_keys=new_keys, key=k) for k, v in obj.iteritems() if k not in self.excluded_keys | new_k}
+            return {k: self._prepare_object(v, new_keys=new_keys, key=k) for k, v in obj.iteritems()
+                    if k not in self.excluded_keys | new_k}
         elif hasattr(obj, '__iter__'):
             return [self._prepare_object(o, new_keys=new_keys, key=key) for o in obj]
         else:
@@ -73,21 +83,21 @@ class Differ(object):
                 try:
                     if not obj.startswith('0'):
                         return float(obj)
-                except:
+                except ValueError:
                     pass
                 try:
-                    return datetime.strftime(obj, '%Y%m%d')
-                except:
+                    return datetime.strptime(obj, '%Y%m%d')
+                except ValueError:
                     pass
                 try:
-                    return datetime.strftime(obj, '%Y%m%d %H:%M%S')
-                except:
+                    return datetime.strptime(obj, '%Y%m%d %H:%M%S')
+                except ValueError:
                     pass
             return obj
 
     def _leaf_compare(self, v1, v2, k=None):
-        added = set([v2, ]) if not v1 and v2 else set()
-        removed = set([v1, ]) if v1 and not v2 else set()
+        added = {v2} if not v1 and v2 else set()
+        removed = {v1} if v1 and not v2 else set()
         modified = {'origin': v1, 'test': v2} if v1 != v2 else {}
         same = v1 if v1 == v2 else set()
         return added, removed, modified, same, set()
@@ -110,8 +120,7 @@ class Differ(object):
                     r = SequenceMatcher(None, obj1, obj2).ratio()
             else:
                 r = 0.0
-            m = Match(i2, r, obj2)
-            matches.setdefault(i1,[]).append(m)
+            matches.setdefault(i1, []).append(Match(i2, r, obj2))
 
         for i, el1 in enumerate(l1_filtered):
             match = sorted(matches.get(i, []), key=lambda m: m.ratio, reverse=True)[0]
