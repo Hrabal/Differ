@@ -8,15 +8,11 @@ This module do what others do (think of [difflib](https://docs.python.org/3/libr
 ```python
 from differ import Differ
 differ = Differ()
-added, removed, modified, same, checked = differ.compare(object1, object2)
-
-# Or access the results later in the code:
-differ.compare(object1, object2)
-...
-print(differ.added, differ.removed)
+diff = differ.compare(object1, object2)
+# diff is a Difference instance that can be traversed:
 ```
 
-You can also play with inheritance from the Diffing class, that will provide you the brand new keyword ' |_| ':
+You can also play with inheritance from the Diffing class, that will override the bitwise xor operator ('^') so it will produces differencies:
 ```python
 from differ import Diffing
 class MyClass(Diffing):
@@ -24,14 +20,5 @@ class MyClass(Diffing):
 
 a = MyClass()
 b = MyClass()
-diff = a |_| b  # diff is a Differ instance
-```
-
-You can also use the magic, and make everything differable:
-```python
-from differ import differencies
-# now, some python objects respond to the beautiful |_| operator !!
-
-a = b = {}
-diff = a |_| b
+diff = a ^ b  # diff is a Difference instance
 ```
