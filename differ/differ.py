@@ -3,48 +3,9 @@ from copy import copy
 from itertools import product
 from datetime import datetime
 from difflib import SequenceMatcher
-from collections import OrderedDict, namedtuple, Hashable
+from collections import OrderedDict
 
-
-class Hashabledict(dict):
-    def __key(self):
-        return tuple((k, self[k]) for k in sorted(self))
-
-    def __hash__(self):
-        return hash(self.__key())
-
-    def __eq__(self, other):
-        return self.__key() == other.__key()
-
-
-class Hashablelist(list):
-    def __key(self):
-        return tuple(k for k in sorted(self))
-
-    def __hash__(self):
-        return hash(self.__key())
-
-    def __eq__(self, other):
-        return self.__key() == other.__key()
-
-
-def make_hashable(thing):
-    if isinstance(thing, Hashable):
-        return thing
-    elif isinstance(thing, list):
-        ret = Hashablelist()
-        for subthing in thing:
-            ret.append(make_hashable(subthing))
-        return ret
-    elif isinstance(thing, dict):
-        new_thing = Hashabledict()
-        for k, v in thing.iteritems():
-            new_thing[k] = make_hashable(v)
-        return new_thing
-    else:
-        return thing
-
-Match = namedtuple('Match', ['twin_index', 'ratio', 'val'])
+from tools import make_hashable, Match
 
 
 class Difference(object):
@@ -62,9 +23,10 @@ class Differ(object):
 
     def _get_compare_method(self, obj):
         compare_methods = OrderedDict([
-                (lambda x: isinstance(x, dict), self._dict_compare),
-                (lambda x: hasattr(x, '__iter__'), self._iter_compare),
-                (lambda x: True, self._leaf_compare)
+            (lambda x: isinstance(x, dict), self._dict_compare),
+            (lambda x: hasattr(x, '__iter__'), self._iter_compare),
+            (lambda x: hasattr(x, '__eq__'), self._leaf_compare),
+            (lambda x: isinstance(x, object), self._obj_compare)
         ])
         return next((value for condition, value in compare_methods.items() if condition(obj)), '')
 
@@ -95,10 +57,13 @@ class Differ(object):
                     pass
             return obj
 
-    def _leaf_compare(self, v1, v2, k=None):
+    def _obj_compare(self, v1, v2, key=None):
+        return self._dict_compare(v1.__dict__, v2.__dict__, key=key)
+
+    def _leaf_compare(self, v1, v2, key=None):
         added = {v2} if not v1 and v2 else set()
         removed = {v1} if v1 and not v2 else set()
-        modified = {'origin': v1, 'test': v2} if v1 != v2 else {}
+        modified = {'origin': v1, 'new': v2} if v1 != v2 else {}
         same = v1 if v1 == v2 else set()
         return added, removed, modified, same, set()
 
@@ -159,8 +124,24 @@ class Differ(object):
                     modified[k] = self._format_report(a, r, m, None)
             else:
                 same.add(k)
-        # same = set(o for o in intersect_keys if d1_filtered[o] == d2_filtered[o])
         return added, removed, modified, same, checked
 
     def compare(self, obj1, obj2):
-        return self._get_compare_method(obj1)(obj1, obj2)
+        method1, method2 = map(self._get_compare_method, (obj1, obj2))
+        if method1 != method2:
+            raise ValueError
+        return method1(obj1, obj2)
+
+
+class Diffing(object):
+
+    compare = lambda x, y: Differ().compare(x, y)
+
+    def __rxor__(self, other):
+        return Diffing.compare(other, self)
+
+    def __xor__(self, other):
+        return Diffing.compare(self, other)
+
+    def __call__(self, value1, value2):
+        return Diffing.compare(value1, value2)
