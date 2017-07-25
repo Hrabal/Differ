@@ -1,4 +1,4 @@
 # coding: utf-8
 
-from .differ import Differ
-__all__ = ["Differ", "Diffing", "differencies"]
+from .differ import Differ, Diffing
+__all__ = ["Differ", "Diffing"]
